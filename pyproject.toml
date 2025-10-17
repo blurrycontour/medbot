@@ -1,0 +1,36 @@
+[project]
+name = "medbot"
+version = "1.0.0"
+description = "A python package for medical reminders"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Aditya Singh", email = "adityasingh8532@gmail.com" }
+]
+maintainers = [
+    { name = "Aditya Singh", email = "adityasingh8532@gmail.com" }
+]
+license = { file = "LICENSE" }
+dependencies = [
+    "pyyaml",
+    "python-telegram-bot",
+    "python-telegram-bot[job-queue]",
+    "dotenv"
+]
+keywords = [
+    "medical",
+    "pills",
+    "tablets",
+    "reminder"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "flake8"
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
