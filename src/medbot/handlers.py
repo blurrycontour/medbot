@@ -1,8 +1,8 @@
-import logging
-from telegram import Update
+from telegram import Update, ReplyKeyboardRemove
 from telegram.ext import ContextTypes
 from timezonefinder import TimezoneFinder
-from . import db
+
+from .db import db
 
 # timezone finder instance (cheap to keep around)
 tzfinder = TimezoneFinder()
@@ -19,12 +19,17 @@ async def handle_location(update: Update, _context: ContextTypes.DEFAULT_TYPE):
     tz_name = tzfinder.timezone_at(lat=lat, lng=lon)
 
     if not tz_name:
-        await update.message.reply_text("Couldn't determine timezone from that location. Please send /settz <Region/City> instead.")
+        await update.message.reply_text(
+            "Couldn't determine timezone from that location.\nPlease send /timezone <Region/City> instead.",
+            reply_markup=ReplyKeyboardRemove()
+        )
         return
-    # Save tz (only update tz column)
-    db.upsert_user(user_id, {'tz': tz_name})
-    await update.message.reply_text(f"Detected timezone: {tz_name}")
-
+    # Save tz (only update tz field)
+    db.users.update_one({'user_id': user_id}, {'$set': {'tz': tz_name}}, upsert=True)
+    await update.message.reply_text(
+        f"Detected timezone: {tz_name}",
+        reply_markup=ReplyKeyboardRemove()
+    )
 
 
 async def handle_photo(update: Update, _context: ContextTypes.DEFAULT_TYPE):
@@ -32,7 +37,8 @@ async def handle_photo(update: Update, _context: ContextTypes.DEFAULT_TYPE):
     # Try to find a reminder for today that was sent and not confirmed
     today = __import__("datetime").date.today()
     candidate = None
-    for r in db.get_reminders_for_user(user_id):
+    # find reminders for user
+    for r in db.reminders.find({'user_id': user_id}).sort([('last_sent_date', -1), ('_id', -1)]):
         # r: id, user_id, time, confirmed, last_sent_date
         last_sent = r.get('last_sent_date')
         confirmed = bool(r.get('confirmed'))
@@ -42,13 +48,13 @@ async def handle_photo(update: Update, _context: ContextTypes.DEFAULT_TYPE):
 
     # fallback: most recent unconfirmed reminder
     if candidate is None:
-        for r in db.get_reminders_for_user(user_id):
-            if not bool(r.get('confirmed')):
-                candidate = r
-                break
+        for r in db.reminders.find({'user_id': user_id, 'confirmed': {'$in': [0, False]}}).sort([('_id', -1)]):
+            candidate = r
+            break
 
     if candidate:
-        db.set_confirmed(candidate['id'], True)
+        # mark this reminder as confirmed
+        db.reminders.update_one({'_id': candidate['_id']}, {'$set': {'confirmed': 1}})
         await update.message.reply_text("Thank you for confirming your medication intake!")
     else:
         await update.message.reply_text("No active reminder. Use /setreminder to set one.")

@@ -1,25 +1,21 @@
+import os
 import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
-import os
-from dotenv import load_dotenv
 
-from . import db, jobs, handlers, commands, utils
+from . import jobs, handlers, commands, utils
 
-# Load environment variables
-load_dotenv()
-TOKEN = os.getenv("APITOKEN")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 ENV = os.getenv("ENVIRONMENT")
 
 
-def main():
+def run():
     """Setup and create the bot application."""
-    utils.setup_logging(log_level=logging.DEBUG, log_file="bot.log")
-    db.init_db()
+    utils.setup_logging(log_level=logging.INFO, log_file="bot.log")
 
-    app = ApplicationBuilder().token(TOKEN).build()
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler(["start", "help"], commands.start))
-    app.add_handler(CommandHandler("setreminder", commands.set_reminder))
-    app.add_handler(CommandHandler("settz", commands.settz))
+    app.add_handler(CommandHandler("set", commands.set_reminder))
+    app.add_handler(CommandHandler("timezone", commands.settz))
     app.add_handler(MessageHandler(filters.PHOTO, handlers.handle_photo))
     app.add_handler(MessageHandler(filters.LOCATION, handlers.handle_location))
 
@@ -39,4 +35,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run()
