@@ -15,7 +15,9 @@ dependencies = [
     "pyyaml",
     "python-telegram-bot",
     "python-telegram-bot[job-queue]",
-    "dotenv"
+    "python-dotenv",
+    "timezonefinder",
+    "pymongo"
 ]
 keywords = [
     "medical",
