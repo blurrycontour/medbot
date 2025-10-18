@@ -6,7 +6,7 @@ services:
       context: '.'
       dockerfile: Dockerfile
       network: host
-    command: "python -m medbot.run"
+    # command: "python -m medbot.run"
     environment:
       - MONGODB_STRING=${MONGODB_STRING}
       - ENVIRONMENT=${ENVIRONMENT}
