@@ -10,7 +10,7 @@ ENV = os.getenv("ENVIRONMENT")
 
 def run():
     """Setup and create the bot application."""
-    utils.setup_logging(log_level=logging.INFO, log_file="bot.log")
+    utils.setup_logging(log_level=logging.INFO)
 
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler(["start", "help"], commands.start))
