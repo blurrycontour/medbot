@@ -69,7 +69,6 @@ async def settz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def list_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-
     try:
         reminders = list(db.get_reminders(user_id))
         if not reminders:
@@ -84,3 +83,21 @@ async def list_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except ValueError:
         await update.message.reply_text("Error retrieving reminders.")
+
+
+async def remove_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    try:
+        reminders = list(db.get_reminders(user_id))
+        if not reminders:
+            await update.message.reply_text("No reminders set. Use /set to add one.")
+            return
+        # give user list of reminders as keyboard buttons to choose from
+        kb = [[KeyboardButton(text=f"{r.get('time')} - {r.get('name')}")] for r in reminders]
+        await update.message.reply_text(
+            "Select a reminder to remove:",
+            reply_markup=ReplyKeyboardMarkup(kb, one_time_keyboard=True, resize_keyboard=True)
+        )
+
+    except ValueError:
+        await update.message.reply_text("Error removing reminders.")
