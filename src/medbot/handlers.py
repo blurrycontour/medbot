@@ -1,6 +1,7 @@
 from telegram import Update, ReplyKeyboardRemove
 from telegram.ext import ContextTypes
 from timezonefinder import TimezoneFinder
+from datetime import date
 
 from .db import db
 
@@ -35,7 +36,7 @@ async def handle_location(update: Update, _context: ContextTypes.DEFAULT_TYPE):
 async def handle_photo(update: Update, _context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     # Try to find a reminder for today that was sent and not confirmed
-    today = __import__("datetime").date.today()
+    today = date.today()
     candidate = None
     # find reminders for user
     for r in db.reminders.find({'user_id': user_id}).sort([('last_sent_date', -1), ('_id', -1)]):

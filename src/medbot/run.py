@@ -15,6 +15,7 @@ def run():
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler(["start", "help"], commands.start))
     app.add_handler(CommandHandler("set", commands.set_reminder))
+    app.add_handler(CommandHandler("list", commands.list_reminders))
     app.add_handler(CommandHandler("timezone", commands.settz))
     app.add_handler(MessageHandler(filters.PHOTO, handlers.handle_photo))
     app.add_handler(MessageHandler(filters.LOCATION, handlers.handle_location))
