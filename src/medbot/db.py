@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Optional, Iterator, Dict, Any
+from typing import Iterator, Dict, Any
 import pymongo
 from pymongo.collection import Collection
 

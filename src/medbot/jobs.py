@@ -1,8 +1,9 @@
 import logging
-from datetime import datetime, date
+from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-from .db import db
 
+from .db import db
+from .utils import get_dynamic_text
 
 
 async def reminder_job(context):
@@ -10,6 +11,8 @@ async def reminder_job(context):
     for r in db.reminders.find({}):
         reminder_id = r.get('_id')
         user_id = r.get('user_id')
+
+        # Validations
         reminder_time_str = r.get('time')
         if not reminder_time_str:
             continue
@@ -31,51 +34,33 @@ async def reminder_job(context):
             logging.error("Invalid timezone for user %s: %s (%s)", user_id, tz_name, e)
             continue
 
-        now = datetime.now(user_tz)
-
         last_sent_str = r.get('last_sent_date')
         if last_sent_str:
             try:
-                last_sent = datetime.strptime(last_sent_str, "%Y-%m-%d").date()
+                last_sent_date = datetime.strptime(last_sent_str, "%Y-%m-%d").date()
             except ValueError:
                 logging.error("Invalid last_sent_date for reminder %s: %s", reminder_id, last_sent_str)
-                last_sent = None
+                last_sent_date = None
         else:
-            last_sent = None
+            last_sent_date = None
 
-        if not last_sent or not isinstance(last_sent, date):
-            continue
-
-        # If already sent today for this reminder, skip
-        if confirmed and now.date() == last_sent:
-            continue
-
-        # If not sent today and confirmed is True
-        confirmed = bool(r.get('confirmed'))
-        if confirmed and now.date() != last_sent:
-            confirmed = False
-            db.reminders.update_one({'_id': reminder_id}, {'$set': {'confirmed': 0}})
-
-        # Send normal reminder
-        if not confirmed and last_sent != now.date() and now.time() >= reminder_time:
+        # Sneding reminder logic
+        now = datetime.now(user_tz)
+        if last_sent_date != now.date() and now.time() >= reminder_time:
             try:
-                await context.bot.send_message(
+                logging.info("Sending reminder %s to user %s", reminder_id, user_id)
+                sent = await context.bot.send_message(
                     chat_id=user_id,
-                    text="📢📢📢\nIt's time to take your pills 💊!\nThen send a photo as confirmation."
+                    text="⚠️🚨👇\nIt's time to take your pills 💊!\nThen send a photo as confirmation for your reward 🏆"
                 )
-                # Mark this reminder as sent for today
-                db.reminders.update_one({'_id': reminder_id}, {'$set': {'last_sent_date': now.date().isoformat()}})
+                db.reminders.update_one(
+                    {'_id': reminder_id},
+                    {'$set': {
+                        'last_sent_date': now.date().isoformat(),
+                        'confirmed': False,
+                        'message_id': sent.message_id
+                        }
+                    }
+                )
             except (ConnectionError, TimeoutError) as e:
                 logging.error("Error sending reminder to %s: %s", user_id, e)
-
-        # Send follow-up if not confirmed by today
-        repeated = r.get('repeated')
-        new_reminder_time = reminder_time.replace(hour=reminder_time.hour + 1)
-        if not confirmed and last_sent == now.date() and now.time() >= reminder_time:
-            try:
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text="⏰ Reminder: Confirm you've taken your medication by sending a photo."
-                )
-            except (ConnectionError, TimeoutError) as e:
-                logging.error("Error sending follow-up to %s: %s", user_id, e)

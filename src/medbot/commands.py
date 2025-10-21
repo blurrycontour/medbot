@@ -1,7 +1,14 @@
 import logging
+import os
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from datetime import datetime
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
+from telegram import (
+    Update,
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup
+)
 from telegram.ext import ContextTypes
 
 from .db import db
@@ -9,15 +16,43 @@ from .db import db
 logger = logging.getLogger(__name__)
 
 
-async def start(update: Update, _context: ContextTypes.DEFAULT_TYPE):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """ Start command handler """
+    # Create a user entry if not exists
+    user = update.effective_user
+    db.users.update_one(
+        {'user_id': user.id},
+        {'$setOnInsert': {
+            'user_id': user.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'username': user.username
+        }},
+        upsert=True
+    )
+    # Notify admin of new user
+    ADMIN_USER_ID = os.getenv("ADMIN_USER_ID")
+    if ADMIN_USER_ID:
+        try:
+            await context.bot.send_message(
+                chat_id=int(ADMIN_USER_ID),
+                text=f"[INFO] New user started the bot:\n"
+                     f"ID: {user.id}\n"
+                     f"Name: {user.full_name}\n"
+                     f"Username: @{user.username if user.username else 'N/A'}"
+            )
+        except Exception as e:
+            logger.error("Failed to notify admin of new user: %s", e)
+
     await update.message.reply_text(
-        "Hej! I'm MedBot!\n" \
+        "Hej! I'm very friendly MedBot 🤖!\n" \
         "I can send medication reminders at a time you choose.\n\n" \
-        "I'll try to detect your timezone — send your location OR set it manually with\n/timezone <Region/City> (e.g. /timezone Europe/London)."
+        "I'll try to detect your timezone — send your location OR set it manually with\n/timezone <Region/City> (e.g. /timezone Europe/London)"
     )
 
 
 async def set_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """ Set a reminder """
     user_id = update.effective_user.id
     user = db.get_user(user_id)
     tz_name = user.get('tz')
@@ -26,7 +61,7 @@ async def set_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Usage: /set <HH:MM> <medicine-name>")
         return
     if not tz_name:
-        await update.message.reply_text("Please set your timezone first using /timezone command.")
+        await update.message.reply_text("Please set your timezone first using /timezone command")
         return
     try:
         reminder_time = datetime.strptime(context.args[0], "%H:%M").time()
@@ -36,16 +71,17 @@ async def set_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
             'user_id': user_id,
             'time': reminder_time.strftime("%H:%M"),
             'name': name,
-            'confirmed': 0,
+            'confirmed': False,
             'last_sent_date': None,
             'repeated': 0
         })
-        await update.message.reply_text(f"Reminder set for {reminder_time.strftime('%H:%M')}")
+        await update.message.reply_text(f"Reminder set for '{name}' at {reminder_time.strftime('%H:%M')}")
     except ValueError:
         await update.message.reply_text("Invalid time format. Use HH:MM.")
 
 
 async def settz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """ Set timezone command handler """
     user_id = update.effective_user.id
     # If user provided tz string as arg, try to validate
     if len(context.args) == 1:
@@ -56,48 +92,101 @@ async def settz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             db.users.update_one({'user_id': user_id}, {'$set': {'tz': tz_name}}, upsert=True)
             await update.message.reply_text(f"Timezone set to {tz_name}")
         except ZoneInfoNotFoundError:
-            await update.message.reply_text("Invalid timezone. Use an IANA timezone like 'Europe/London'.")
+            await update.message.reply_text("Invalid timezone!\nUse an IANA timezone like 'Europe/London'.")
         return
 
     # No args: prompt for location
     kb = [[KeyboardButton(text="Share location", request_location=True)]]
     await update.message.reply_text(
-        "Please share your location so I can detect your timezone, OR use /timezone <Region/City>.",
+        "Please share your location so I can detect your timezone, OR use /timezone <Region/City>",
         reply_markup=ReplyKeyboardMarkup(kb, one_time_keyboard=True, resize_keyboard=True)
     )
 
 
-async def list_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def list_reminders(update: Update, _context: ContextTypes.DEFAULT_TYPE):
+    """ List reminders command handler """
     user_id = update.effective_user.id
     try:
         reminders = list(db.get_reminders(user_id))
         if not reminders:
-            await update.message.reply_text("No reminders set. Use /set to add one.")
+            await update.message.reply_text("No reminders set\nUse /set to add one")
             return
         msg_lines = ["Your reminders:"]
+        max_line_len = 0
         for r in reminders:
             time_str = r.get('time')
             name = r.get('name')
-            msg_lines.append(f"- Time: {time_str}, Name: {name}")
+            streak = r.get('streak', 0)
+            streak_txt = f"    🔥 {streak} day{'s' if streak > 1 else ''}" if streak else ""
+            msg_line = f"⏰ {time_str} - {name}{streak_txt}"
+            msg_lines.append(msg_line)
+            if len(msg_line) > max_line_len:
+                max_line_len = len(msg_line)
+        # pad the message lines for better readability
+        msg_lines = [msg_lines[0]] + [line.ljust(max_line_len) for line in msg_lines[1:]]
+
         await update.message.reply_text("\n".join(msg_lines))
 
     except ValueError:
-        await update.message.reply_text("Error retrieving reminders.")
+        await update.message.reply_text("Error retrieving reminders")
 
 
-async def remove_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def remove_reminder(update: Update, _context: ContextTypes.DEFAULT_TYPE):
+    """ Remove reminder command handler """
     user_id = update.effective_user.id
     try:
         reminders = list(db.get_reminders(user_id))
         if not reminders:
-            await update.message.reply_text("No reminders set. Use /set to add one.")
+            await update.message.reply_text("No reminders set\nUse /set to add one")
             return
         # give user list of reminders as keyboard buttons to choose from
-        kb = [[KeyboardButton(text=f"{r.get('time')} - {r.get('name')}")] for r in reminders]
+        kb = []
+        for r in reminders:
+            rid = str(r.get('_id'))  # use document id to identify the reminder reliably
+            label = f"⏰ {r.get('time')} - {r.get('name')}"
+            kb.append([InlineKeyboardButton(text=label, callback_data=f"remove:{rid}")])
+        kb.append([InlineKeyboardButton(text="[All Reminders]", callback_data="remove:all")])
+        kb.append([InlineKeyboardButton(text="[Cancel]", callback_data="remove:cancel")])
+
         await update.message.reply_text(
             "Select a reminder to remove:",
-            reply_markup=ReplyKeyboardMarkup(kb, one_time_keyboard=True, resize_keyboard=True)
+            reply_markup=InlineKeyboardMarkup(kb)
         )
+        return
 
     except ValueError:
-        await update.message.reply_text("Error removing reminders.")
+        await update.message.reply_text("Error removing reminders")
+
+
+async def user_stats(update: Update, _context: ContextTypes.DEFAULT_TYPE):
+    """ User stats command handler """
+    user_id = update.effective_user.id
+    try:
+        reminders = list(db.get_reminders(user_id))
+        if not reminders:
+            await update.message.reply_text("No reminders set\nUse /set to add one")
+            return
+        total_reminders = len(reminders)
+        longest_streak = max((r.get('streak', 0) for r in reminders), default=0)
+
+        stats_msg = (
+            f"📊 Your Stats:\n"
+            f"Total Reminders: {total_reminders}\n"
+            f"Longest Streak: {longest_streak} day{'s' if longest_streak != 1 else ''} 🔥\n\n"
+            "Keep up the good work! 💪💊"
+        )
+        await update.message.reply_text(stats_msg)
+
+    except ValueError:
+        await update.message.reply_text("Error retrieving user stats")
+
+
+async def debug(update: Update, _context: ContextTypes.DEFAULT_TYPE):
+    """ Debug command handler - admin only """
+    user_id = update.effective_user.id
+    await update.message.reply_text(
+        f"[DEBUG]\n" \
+        f"User ID: {user_id}\n" \
+        f"Message ID: {update.message.message_id}\n" \
+        f"Chat ID: {update.effective_chat.id}"
+    )
