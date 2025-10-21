@@ -190,3 +190,18 @@ async def debug(update: Update, _context: ContextTypes.DEFAULT_TYPE):
         f"Message ID: {update.message.message_id}\n" \
         f"Chat ID: {update.effective_chat.id}"
     )
+
+
+async def help_command(update: Update, _context: ContextTypes.DEFAULT_TYPE):
+    """ Help command handler """
+    help_text = (
+        "Available commands:\n"
+        "/start - Get started with the bot\n"
+        "/timezone - Set your timezone\n"
+        "/set - Create a new reminder\n"
+        "/list - List all your reminders\n"
+        "/stats - Your statistics\n"
+        "/remove - Remove a reminder or all reminders\n"
+        "/help - Show this help message"
+    )
+    await update.message.reply_text(help_text)

@@ -24,12 +24,13 @@ ADMIN_USER_ID = os.getenv("ADMIN_USER_ID")
 def run():
     """Setup and create the bot application."""
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(CommandHandler(["start", "help"], commands.start))
+    app.add_handler(CommandHandler(["start"], commands.start))
     app.add_handler(CommandHandler("timezone", commands.settz))
     app.add_handler(CommandHandler("set", commands.set_reminder))
     app.add_handler(CommandHandler("list", commands.list_reminders))
     app.add_handler(CommandHandler("remove", commands.remove_reminder))
     app.add_handler(CommandHandler("stats", commands.user_stats))
+    app.add_handler(CommandHandler("help", commands.help_command))
     if ADMIN_USER_ID:
         app.add_handler(CommandHandler("debug", commands.debug, filters=filters.User(int(ADMIN_USER_ID))))
     app.add_handler(MessageHandler(filters.PHOTO, handlers.handle_photo))

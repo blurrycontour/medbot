@@ -23,7 +23,7 @@ def get_dynamic_text(prompt: str, user_handle: str, default: str = None) -> str:
             messages=[
                 {
                     'role': 'user',
-                    'content': f"Give a warm and human like respnose to:\n{prompt}"
+                    'content': f"You are a telegram bot who sends reminders for medications to users. Give a warm and human like respnose to:\n{prompt}\nOnly give the response text for end user."
                 }
             ]
         )

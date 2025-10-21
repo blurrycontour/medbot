@@ -72,7 +72,7 @@ async def handle_photo(update: Update, _context: ContextTypes.DEFAULT_TYPE):
             )
             # give reward
             dynamic_reward_txt = get_dynamic_text(
-                f"Generate a congratulatory and encouraging message for a user who has followed up on their medication today at {confirmed_date_str}.",
+                f"Generate a congratulatory and encouraging message for a user who has followed up on their medication today.",
                 default="✅ Good job! You're a nice person! 🎉🏆",
                 user_handle=update.effective_user.username
             )
