@@ -14,7 +14,8 @@ import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 
 from . import utils
-utils.setup_logging(log_level=logging.INFO)
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+utils.setup_logging(log_level=LOG_LEVEL)
 from . import jobs, handlers, commands
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")

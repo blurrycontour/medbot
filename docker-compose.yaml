@@ -12,6 +12,10 @@ services:
       - ENVIRONMENT=${ENVIRONMENT}
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - WEBHOOK_URL=${WEBHOOK_URL}
+      - AI_GATEWAY_API_KEY=${AI_GATEWAY_API_KEY}
+      - APPROVED_USERS=${APPROVED_USERS}
+      - ADMIN_USER_ID=${ADMIN_USER_ID}
+      - LOG_LEVEL=${LOG_LEVEL}
     volumes:
       - /.logs:/repo/.logs
     networks:
