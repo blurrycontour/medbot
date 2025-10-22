@@ -3,7 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .db import db
-from .utils import get_dynamic_text
+from .ai import get_dynamic_text
 
 
 async def reminder_job(context):
@@ -49,9 +49,15 @@ async def reminder_job(context):
         if last_sent_date != now.date() and now.time() >= reminder_time:
             try:
                 logging.info("Sending reminder %s to user %s", reminder_id, user_id)
+                pill_name = r.get('name', 'pills')
+                reminder_text = get_dynamic_text(
+                    f"Create a friendly medication reminder message for a user to take their medicine named '{r.get('name')}'.",
+                    default=f"It's time to take: {pill_name} 💊",
+                    user_handle=user.get('username')
+                )
                 sent = await context.bot.send_message(
                     chat_id=user_id,
-                    text="⚠️🚨👇\nIt's time to take your pills 💊!\n\nThen reply with a confirmation photo to this message for your reward 🏆"
+                    text=f"⚠️🚨👇 ({pill_name})\n\n{reminder_text}\n\nThen reply with a confirmation photo to this message for your reward 🏆"
                 )
                 db.reminders.update_one(
                     {'_id': reminder_id},

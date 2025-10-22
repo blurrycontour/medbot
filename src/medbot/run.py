@@ -10,8 +10,13 @@ remove - Remove a reminder or all reminders
 help - Help
 """
 import os
-import logging
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    CallbackQueryHandler
+)
 
 from . import utils
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()

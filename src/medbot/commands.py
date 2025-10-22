@@ -23,7 +23,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     db.users.update_one(
         {'user_id': user.id},
-        {'$setOnInsert': {
+        {'$set': {
             'user_id': user.id,
             'first_name': user.first_name,
             'last_name': user.last_name,
@@ -66,15 +66,14 @@ async def set_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     try:
         reminder_time = datetime.strptime(context.args[0], "%H:%M").time()
-        name = context.args[1].strip()
+        name = " ".join(context.args[1:]).strip()
         # add a reminder document for this user
         db.add_reminder({
             'user_id': user_id,
             'time': reminder_time.strftime("%H:%M"),
             'name': name,
             'confirmed': False,
-            'last_sent_date': None,
-            'repeated': 0
+            'last_sent_date': None
         })
         await update.message.reply_text(f"Reminder set for '{name}' at {reminder_time.strftime('%H:%M')}")
     except ValueError:

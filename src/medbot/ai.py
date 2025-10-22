@@ -10,6 +10,7 @@ def get_dynamic_text(prompt: str, user_handle: str, default: str = None) -> str:
     """Generate dynamic text using AI model based on the prompt."""
     logger = logging.getLogger(__name__)
     if user_handle not in APPROVED_USERS:
+        logger.warning("Unauthorized user %s attempted to use AI features.", user_handle)
         if default:
             return default
         return "Unauthorized to use AI features!"
@@ -18,16 +19,27 @@ def get_dynamic_text(prompt: str, user_handle: str, default: str = None) -> str:
             api_key=AI_GATEWAY_API_KEY,
             base_url='https://ai-gateway.vercel.sh/v1'
         )
-        response = client.chat.completions.create(
-            model='openai/gpt-5-nano',
-            messages=[
-                {
-                    'role': 'user',
-                    'content': f"You are a telegram bot who sends reminders for medications to users. Give a warm and human like respnose to:\n{prompt}\nOnly give the response text for end user."
-                }
-            ]
+        if not AI_GATEWAY_API_KEY:
+            raise RuntimeError("AI_GATEWAY_API_KEY is not set")
+
+        system_msg = (
+            "You are a friendly, human-like Telegram bot that sends medication reminders. "
+            "Keep the tone warm, concise, and easy to understand. "
+            "Only return the message text to be sent to the user — do not include explanations, markup, metadata or any response from user or offering any help via replies."
         )
-        return response.choices[0].message.content.strip()
+        messages = [
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": prompt}
+        ]
+
+        response = client.chat.completions.create(
+            model="openai/gpt-5-nano",
+            messages=messages,
+            temperature=0.7
+        )
+        response_text = response.choices[0].message.content.strip()
+        logger.info("Generated dynamic text for user %s: %s", user_handle, response_text)
+        return response_text
     except Exception as e:
         logger.error("Error generating dynamic text: %s", e)
         if default:
