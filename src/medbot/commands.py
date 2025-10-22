@@ -14,6 +14,7 @@ from telegram.ext import ContextTypes
 from .db import db
 
 logger = logging.getLogger(__name__)
+ADMIN_USER_ID = os.getenv("ADMIN_USER_ID")
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -193,4 +194,8 @@ async def help_command(update: Update, _context: ContextTypes.DEFAULT_TYPE):
         "/remove - Remove a reminder or all reminders\n"
         "/help - Show this help message"
     )
+    if ADMIN_USER_ID and update.effective_user.id == int(ADMIN_USER_ID):
+        help_text += "\n\nAdmin commands:\n"
+        help_text += "/info - Get my user info\n"
+        help_text += "/users - List all users"
     await update.message.reply_text(help_text)
