@@ -31,11 +31,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         upsert=True
     )
     # Notify admin of new user
-    ADMIN_USER_ID = os.getenv("ADMIN_USER_ID")
-    if ADMIN_USER_ID:
+    admin_user_id = os.getenv("ADMIN_USER_ID")
+    if admin_user_id:
         try:
             await context.bot.send_message(
-                chat_id=int(ADMIN_USER_ID),
+                chat_id=int(admin_user_id),
                 text=f"[INFO] New user started the bot:\n"
                      f"ID: {user.id}\n"
                      f"Name: {user.full_name}\n"
@@ -179,17 +179,6 @@ async def user_stats(update: Update, _context: ContextTypes.DEFAULT_TYPE):
 
     except ValueError:
         await update.message.reply_text("Error retrieving user stats")
-
-
-async def debug(update: Update, _context: ContextTypes.DEFAULT_TYPE):
-    """ Debug command handler - admin only """
-    user_id = update.effective_user.id
-    await update.message.reply_text(
-        f"[DEBUG]\n" \
-        f"User ID: {user_id}\n" \
-        f"Message ID: {update.message.message_id}\n" \
-        f"Chat ID: {update.effective_chat.id}"
-    )
 
 
 async def help_command(update: Update, _context: ContextTypes.DEFAULT_TYPE):

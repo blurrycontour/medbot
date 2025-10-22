@@ -51,7 +51,7 @@ async def reminder_job(context):
                 logging.info("Sending reminder %s to user %s", reminder_id, user_id)
                 sent = await context.bot.send_message(
                     chat_id=user_id,
-                    text="⚠️🚨👇\nIt's time to take your pills 💊!\nThen send a photo as confirmation for your reward 🏆"
+                    text="⚠️🚨👇\nIt's time to take your pills 💊!\n\nThen reply with a confirmation photo to this message for your reward 🏆"
                 )
                 db.reminders.update_one(
                     {'_id': reminder_id},

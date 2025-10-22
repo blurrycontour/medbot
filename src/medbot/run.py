@@ -16,7 +16,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 from . import utils
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 utils.setup_logging(log_level=LOG_LEVEL)
-from . import jobs, handlers, commands
+from . import jobs, handlers, commands, debug
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 ENV = os.getenv("ENVIRONMENT")
@@ -33,7 +33,8 @@ def run():
     app.add_handler(CommandHandler("stats", commands.user_stats))
     app.add_handler(CommandHandler("help", commands.help_command))
     if ADMIN_USER_ID:
-        app.add_handler(CommandHandler("debug", commands.debug, filters=filters.User(int(ADMIN_USER_ID))))
+        app.add_handler(CommandHandler("info", debug.info, filters=filters.User(int(ADMIN_USER_ID))))
+        app.add_handler(CommandHandler("users", debug.user_list, filters=filters.User(int(ADMIN_USER_ID))))
     app.add_handler(MessageHandler(filters.PHOTO, handlers.handle_photo))
     app.add_handler(MessageHandler(filters.LOCATION, handlers.handle_location))
     app.add_handler(CallbackQueryHandler(handlers.handle_remove_callback, pattern="^remove:"))

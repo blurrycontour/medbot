@@ -41,6 +41,9 @@ class Database:
     def get_user(self, user_id: int) -> Dict[str, Any]:
         return self.users.find_one({'user_id': user_id}) or {}
 
+    def get_users(self) -> Iterator[Dict[str, Any]]:
+        return self.users.find()
+
     def add_reminder(self, reminder_data: Dict[str, Any]) -> Any:
         result = self.reminders.insert_one(reminder_data)
         return result.inserted_id
