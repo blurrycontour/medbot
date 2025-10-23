@@ -1,7 +1,6 @@
 import logging
 import sys
 from typing import Optional
-import os
 
 
 def setup_logging(log_level=logging.INFO, log_file: Optional[str] = None):
