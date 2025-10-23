@@ -196,5 +196,6 @@ async def help_command(update: Update, _context: ContextTypes.DEFAULT_TYPE):
     if ADMIN_USER_ID and update.effective_user.id == int(ADMIN_USER_ID):
         help_text += "\n\nAdmin commands:\n"
         help_text += "/info - Get my user info\n"
-        help_text += "/users - List all users"
+        help_text += "/users - List all users\n"
+        help_text += "/sudolist - List reminders for a specific user\n"
     await update.message.reply_text(help_text)

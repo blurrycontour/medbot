@@ -20,7 +20,7 @@ from telegram.ext import (
 
 from . import utils
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-utils.setup_logging(log_level=LOG_LEVEL)
+utils.setup_logging(log_level=LOG_LEVEL, file_logger_names=["httpx"])
 from . import jobs, handlers, commands, debug
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -40,23 +40,16 @@ def run():
     if ADMIN_USER_ID:
         app.add_handler(CommandHandler("info", debug.info, filters=filters.User(int(ADMIN_USER_ID))))
         app.add_handler(CommandHandler("users", debug.user_list, filters=filters.User(int(ADMIN_USER_ID))))
+        app.add_handler(CommandHandler("sudolist", debug.sudo_list_reminders, filters=filters.User(int(ADMIN_USER_ID))))
     app.add_handler(MessageHandler(filters.PHOTO, handlers.handle_photo))
     app.add_handler(MessageHandler(filters.LOCATION, handlers.handle_location))
     app.add_handler(CallbackQueryHandler(handlers.handle_remove_callback, pattern="^remove:"))
+    app.add_handler(CallbackQueryHandler(handlers.handle_sudolist_callback, pattern="^sudolist:"))
 
     # Start reminder job - check every 30 seconds
     app.job_queue.run_repeating(jobs.reminder_job, interval=30, first=0)
 
-    if ENV == "prod":
-        webhook_url = os.getenv("WEBHOOK_URL")
-        app.bot.set_webhook(url=webhook_url)
-        app.run_webhook(
-            listen="0.0.0.0",
-            port=8443,
-            webhook_url=webhook_url
-        )
-    else:
-        app.run_polling()
+    app.run_polling()
 
 
 if __name__ == "__main__":

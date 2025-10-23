@@ -1,7 +1,13 @@
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
-
+from telegram import (
+    Update,
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup
+)
 from .db import db
 
 logger = logging.getLogger(__name__)
@@ -31,3 +37,24 @@ async def user_list(update: Update, _context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error("Failed to retrieve user list: %s", e)
         await update.message.reply_text("Failed to retrieve user list.")
+
+
+async def sudo_list_reminders(update: Update, _context: ContextTypes.DEFAULT_TYPE):
+    """ List reminders command handler """
+    try:
+        # give user list of users as keyboard buttons to choose from
+        users = list(db.get_users())
+        kb = []
+        for u in users:
+            uid = str(u.get('user_id'))
+            username = u.get('username')
+            kb.append([InlineKeyboardButton(text=f"@{username}", callback_data=f"sudolist:{uid}")])
+        kb.append([InlineKeyboardButton(text="[Cancel]", callback_data="sudolist:cancel")])
+
+        await update.message.reply_text(
+            "Select a user:",
+            reply_markup=InlineKeyboardMarkup(kb)
+        )
+
+    except ValueError:
+        await update.message.reply_text("Error retrieving users")

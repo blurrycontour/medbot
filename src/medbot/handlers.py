@@ -13,6 +13,7 @@ tzfinder = TimezoneFinder()
 
 logger = logging.getLogger(__name__)
 
+
 async def handle_location(update: Update, _context: ContextTypes.DEFAULT_TYPE):
     """Handle a location message and map it to an IANA timezone."""
     user_id = update.effective_user.id
@@ -127,3 +128,42 @@ async def handle_remove_callback(update: Update, _context: ContextTypes.DEFAULT_
         else:
             await query.edit_message_text("No matching reminder found!")
         return
+
+
+async def handle_sudolist_callback(update: Update, _context: ContextTypes.DEFAULT_TYPE):
+    """Handle inline keyboard callbacks for removing reminders."""
+    query = update.callback_query
+    if not query:
+        return
+    await query.answer()  # acknowledge callback to Telegram
+
+    data = query.data or ""
+    user_id = query.from_user.id
+
+    if data == "sudolist:cancel":
+        await query.edit_message_text("Cancelled listing reminders")
+        return
+
+    if data.startswith("sudolist:"):
+        user_id = int(data.split(":", 1)[1])
+        try:
+            reminders = list(db.get_reminders(user_id))
+            if not reminders:
+                await query.edit_message_text("No reminders set for this user.")
+                return
+            msg_lines = ["Reminders:"]
+            for r in reminders:
+                time_str = r.get('time')
+                name = r.get('name')
+                streak = r.get('streak', 0)
+                streak_txt = f"    🔥 {streak} day{'s' if streak > 1 else ''}" if streak else ""
+                msg_line = (
+                    f"⏰ {time_str} - {name}{streak_txt}\n"
+                    f"      Last Sent: {r.get('last_sent_date')}\n"
+                    f"      Last Confirmed: {r.get('last_confirmed_date')} ({r.get('nconfirmed', 0)} confirmations)"
+                )
+                msg_lines.append(msg_line)
+            await query.edit_message_text("\n".join(msg_lines))
+
+        except ValueError:
+            await query.edit_message_text("Error retrieving user's reminders!")
