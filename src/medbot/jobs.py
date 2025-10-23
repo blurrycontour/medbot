@@ -50,8 +50,9 @@ async def reminder_job(context):
             try:
                 logging.info("Sending reminder %s to user %s", reminder_id, user_id)
                 pill_name = r.get('name', 'pills')
+                first_name = user.get('first_name', 'user')
                 reminder_text = get_dynamic_text(
-                    f"Create a friendly medication reminder message for a user to take their medicine named '{r.get('name')}'.",
+                    f"Create a friendly medication reminder message for '{first_name}' to take their medicine named '{r.get('name')}' at {reminder_time_str}.",
                     default=f"It's time to take: {pill_name} 💊",
                     user_handle=user.get('username')
                 )

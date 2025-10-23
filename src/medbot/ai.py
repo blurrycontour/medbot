@@ -23,8 +23,8 @@ def get_dynamic_text(prompt: str, user_handle: str, default: str = None) -> str:
             raise RuntimeError("AI_GATEWAY_API_KEY is not set")
 
         system_msg = (
-            "You are a friendly, human-like Telegram bot that sends medication reminders. "
-            "Keep the tone warm, concise, and easy to understand. "
+            "You are a friendly, human-like Telegram bot that sends medication reminders everyday. "
+            "Keep the tone warm and easy to understand. "
             "Only return the message text to be sent to the user — do not include explanations, markup, metadata or any response from user or offering any help via replies."
         )
         messages = [
