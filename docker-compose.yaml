@@ -2,7 +2,7 @@ services:
   app:
     image: blurrycontour/medbot:app
     restart: unless-stopped
-    container_name: app
+    container_name: medbot-app
     build:
       context: '.'
       dockerfile: Dockerfile
@@ -24,7 +24,7 @@ services:
   mongodb:
     image: mongo:latest
     restart: unless-stopped
-    container_name: mongodb
+    container_name: medbot-mongodb
     command:
       - --auth
     environment:
