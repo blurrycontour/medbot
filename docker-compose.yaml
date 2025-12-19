@@ -1,7 +1,7 @@
 services:
   app:
-    restart: unless-stopped
     image: blurrycontour/medbot:app
+    restart: unless-stopped
     build:
       context: '.'
       dockerfile: Dockerfile
@@ -16,7 +16,22 @@ services:
       - ADMIN_USER_ID=${ADMIN_USER_ID}
       - LOG_LEVEL=${LOG_LEVEL}
     volumes:
-      - /.logs:/repo/.logs
+      - ${DATA_ROOT_PATH:-.}/logs:/repo/.logs
+    networks:
+      - medbot-network
+
+  mongodb:
+    image: mongo:latest
+    restart: unless-stopped
+    container_name: mongodb
+    command:
+      - --auth
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - ${DATA_ROOT_PATH:-.}/mongo/db:/data/db
+      - ${DATA_ROOT_PATH:-.}/mongo/backup:/data/backup
     networks:
       - medbot-network
 
