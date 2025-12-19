@@ -2,6 +2,7 @@ services:
   app:
     image: blurrycontour/medbot:app
     restart: unless-stopped
+    container_name: app
     build:
       context: '.'
       dockerfile: Dockerfile
